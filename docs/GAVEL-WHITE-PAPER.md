@@ -355,7 +355,73 @@ Model diversity across worker agents provides cognitive isolation. Jev at the or
 
 ---
 
-## 8. Risks, Gaps, and Escapements
+## 8. Practical Usage — Build and Fix Workflows
+
+Gavel is a decision tool, not a build tool. Understanding this distinction is
+critical to using it effectively.
+
+### Where Gavel fits in a build/fix workflow
+
+Every build or fix task starts with a routing decision. Gavel makes that
+decision before the expensive LLM reasoning begins:
+
+| Point in workflow | What Gavel decides | What happens next |
+|---|---|---|
+| Incoming task | Bug or feature? How complex? Urgent? | Routes to worker, solo fix, or queue |
+| Bug triage | Severity? Category? Blocker? | Priority assignment, escalation |
+| Spawn decision | Solo or delegate? Which agent? | Right resource gets the work |
+| Scope check | One task or needs decomposition? | Decomposer or direct spawn |
+| Risk gate | High-risk path? Needs TDD? Irreversible? | TDD mandatory vs fast fix |
+
+### Where Gavel does NOT fit
+
+| Task | Why | Right tool |
+|---|---|---|
+| Writing fix code | Needs code generation | Worker agent (LLM) |
+| Reviewing a diff | Needs reasoning | Orchestrator (LLM) |
+| Debugging root cause | Needs investigation | Worker agent (LLM) |
+| Designing architecture | Needs reasoning | Orchestrator / advisor (LLM) |
+
+### The separation principle
+
+```
+User says "fix the login bug"
+         │
+         ▼
+   GAVEL classifies (200ms, $0.00002)
+   intent=bug  complexity=moderate  urgency=low
+         │
+         ▼
+   LLM builds the fix (reasoning, code generation)
+         │
+         ▼
+   LLM reviews the diff (reasoning, quality gate)
+         │
+         ▼
+   Done
+```
+
+Gavel decides *what kind of work this is*. The LLM does the work.
+
+### What "Gavel" means as a verb
+
+"Gavel" is not a prefix for tasks. It is a reminder to classify before
+acting.
+
+- **User says a task** → Agent Gavel-classifies automatically, then routes.
+  User does not need to say "Gavel."
+- **User says "Gavel"** → Agent checks: did I classify this with Gavel
+  before proceeding? If not, self-correct.
+- **User says "Gavel [non-classification thing]"** → Agent recognizes the
+  mismatch: "Gavel can't do that — this is a reasoning task. Running as LLM."
+
+Gavel cannot analyze architecture, build features, or fix bugs. It can only
+classify, route, score, and gate. Forcing a non-classification task through
+Gavel is a defect.
+
+---
+
+## 9. Risks, Gaps, and Escapements
 
 | Risk | Mitigation |
 |------|------------|
@@ -375,7 +441,7 @@ Model diversity across worker agents provides cognitive isolation. Jev at the or
 
 ---
 
-## 9. Limitations
+## 10. Limitations
 
 | Limitation | Detail |
 |------------|--------|
@@ -389,7 +455,7 @@ Model diversity across worker agents provides cognitive isolation. Jev at the or
 
 ---
 
-## 10. Deployment Considerations
+## 11. Deployment Considerations
 
 Gavel is designed to drop into any OpenClaw installation:
 
@@ -405,7 +471,7 @@ When multiple agents or subagents call `jev_decide` concurrently, be aware that 
 
 ---
 
-## 11. Future Work
+## 12. Future Work
 
 | Item | Description |
 |------|-------------|
@@ -417,7 +483,7 @@ When multiple agents or subagents call `jev_decide` concurrently, be aware that 
 
 ---
 
-## 12. Conclusion
+## 13. Conclusion
 
 Gavel exists because AI agents were burning expensive reasoning engines on cheap classification problems. The combination of a skill (teaching agents when to use structured decisions), a plugin (giving them the tool to make them), and a test suite (proving the tool works as claimed) closes that gap.
 
