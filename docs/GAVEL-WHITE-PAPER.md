@@ -1,10 +1,10 @@
-# Gavel — Structured Decisions for AI Agent Orchestration
+# Gavel:  Structured Decisions for AI Agent Orchestration
 
 ### A White Paper on the OpenClaw Plugin and Skill for TypeSafe Jev
 
 **Author:** Greg Blaire  
 **Date:** 2026-09-18  
-**Status:** Public — ready for distribution
+**Status:** Public : ready for distribution
 
 ---
 
@@ -12,7 +12,7 @@
 
 AI agents running on large language models face a recurring inefficiency: **every decision, no matter how simple, consumes a full LLM call.**
 
-When an agent needs to classify an incoming message, route a bug report, gauge urgency, or pick a department — these are not reasoning problems. They are classification problems with known, finite answer sets. Yet the standard approach is:
+When an agent needs to classify an incoming message, route a bug report, gauge urgency, or pick a department, these are not reasoning problems. They are classification problems with known, finite answer sets. Yet the standard approach is:
 
 1. Send the full context to an LLM
 2. Wait 2–10 seconds for a response
@@ -27,7 +27,7 @@ At scale, this is untenable. An agent orchestrator processing 1,000 routing deci
 
 ## 2. The Insight
 
-TypeSafe AI's Jev (System One class model, `typesafe/jev-1.13`) is purpose-built for this gap. It is **not a chat LLM** — it generates no text, does no reasoning, produces no explanations. It returns exactly three primitives:
+TypeSafe AI's Jev (System One class model, `typesafe/jev-1.13`) is purpose-built for this gap. It is **not a chat LLM** : it generates no text, does no reasoning, produces no explanations. It returns exactly three primitives:
 
 | Primitive | Question it answers | Output |
 |-----------|---------------------|--------|
@@ -52,7 +52,7 @@ The skill teaches agents **when and how** to use Jev. It is a decision tree, not
 **Use Jev when ALL hold:**
 
 - Output is yes/no, pick-from-set, or rubric level
-- Decision is atomic — one focused judgment
+- Decision is atomic : one focused judgment
 - No text generation needed
 - Speed or cost matters at scale
 - Input is text-only under 32k tokens
@@ -70,7 +70,7 @@ The skill teaches agents **when and how** to use Jev. It is a decision tree, not
 - Workflow has both decision points (Jev) and generation steps (LLM)
 - High-volume routing where Jev triages and LLM handles edge cases
 
-The skill also documents the three primitives with concrete examples, state format best practices (string for simple messages, object for named fields, array for conversations), confidence-gated routing thresholds (>0.8 auto-act, 0.5–0.8 confirm, <0.5 fallback), and example agent routing patterns — intent routing, bug triage, and message classification.
+The skill also documents the three primitives with concrete examples, state format best practices (string for simple messages, object for named fields, array for conversations), confidence-gated routing thresholds (>0.8 auto-act, 0.5–0.8 confirm, <0.5 fallback), and example agent routing patterns : intent routing, bug triage, and message classification.
 
 ### Layer 2: The Plugin (`index.ts`)
 
@@ -80,13 +80,13 @@ The plugin is a thin TypeScript wrapper that registers the `jev_decide` tool in 
 - Passes state + questions to `typesafe/jev-1.13`
 - Returns typed answers with probabilities and confidence
 - Handles 30s timeout, error responses, and missing API key
-- Activates on gateway startup — no manual enable needed
+- Activates on gateway startup : no manual enable needed
 
 The plugin does no decision logic itself. It is a pipe. The intelligence lives in the skill (when to call) and in Jev (what to answer).
 
 ### Layer 3: The Test Suite (`tests/`)
 
-32 integration tests hitting the real OpenRouter API — no mocks. The suite validates:
+32 integration tests hitting the real OpenRouter API : no mocks. The suite validates:
 
 - **Primitive correctness:** Each type (noul/choice/score) returns correctly structured answers
 - **State format handling:** String, object, and array inputs all produce valid results
@@ -167,7 +167,7 @@ The following diagram shows the end-to-end flow from user message through Gavel 
 │  complexity:  score  = 2 (Moderate),  confidence = 0.78          │
 │  is_urgent:   noul   = 0.29                                      │
 │                                                                  │
-│  (Not urgent — no explicit urgency language in the message)      │
+│  (Not urgent : no explicit urgency language in the message)      │
 └───────────────────────────┬─────────────────────────────────────┘
                             │
                             ▼
@@ -208,7 +208,7 @@ The three layers ship as a single repository:
 └──────────────┘
 ```
 
-**Three layers — know when, be able, prove it works.**
+**Three layers : know when, be able, prove it works.**
 
 The skill is the brain. The plugin is the hand. Jev is the gavel.
 
@@ -227,10 +227,10 @@ Every test calls the real OpenRouter decisions API at `https://openrouter.ai/api
 | `test_noul_basic.py` | 4 | Primitive | Clear true (>0.8), clear false (<0.2), ambiguous, missing criteria |
 | `test_choice_basic.py` | 4 | Primitive | Clear match (conf >0.7), multi-plausible (conf <0.9), no-match → other, other can win |
 | `test_score_basic.py` | 4 | Primitive | High/boundary/low on 3-level rubric, 2-level minimum |
-| `test_state_formats.py` | 4 | Input | String, object, array — all produce valid answers |
+| `test_state_formats.py` | 4 | Input | String, object, array : all produce valid answers |
 | `test_multi_question.py` | 3 | Concurrency | 5 questions answered, no cross-contamination, latency scaling <2x |
 | `test_confidence_calibration.py` | 3 | Calibration | Clear cases confident, ambiguous uncertain, high-conf more accurate |
-| `test_routing_patterns.py` | 3 | Integration | Intent routing, bug triage, message classification — real agent workflows |
+| `test_routing_patterns.py` | 3 | Integration | Intent routing, bug triage, message classification : real agent workflows |
 | `test_edge_cases.py` | 5 | Robustness | Empty state, 30k chars, bad model, missing type, empty questions |
 | `test_performance.py` | 2 | Performance | Single call <1s, five questions <2s |
 | **Total** | **32** | | |
@@ -277,7 +277,7 @@ Ambiguous statements like "This isn't what I expected" return noul < 0.1 for `re
 
 "fix the login bug on the dashboard" returned `is_urgent` noul ~0.29. Without words like "urgent," "critical," "down," or "broken," Jev does not infer urgency from task type alone.
 
-**Implication:** Routing that uses urgency detection should include context about impact, not just task description. State like `"fix the login bug — production is down"` should produce higher urgency.
+**Implication:** Routing that uses urgency detection should include context about impact, not just task description. State like `"fix the login bug : production is down"` should produce higher urgency.
 
 #### Finding 5: Performance Confirmed
 
@@ -292,7 +292,7 @@ Ambiguous statements like "This isn't what I expected" return noul < 0.1 for `re
 
 #### Finding 6: Casual Language Can Trigger Question Detection
 
-"hey what's up" was classified as `is_question` with noul ~0.84 — despite not being a literal question. Jev interprets conversational openings as implicit questions.
+"hey what's up" was classified as `is_question` with noul ~0.84 : despite not being a literal question. Jev interprets conversational openings as implicit questions.
 
 **Implication:** Message classification thresholds should account for conversational intent, not just grammatical questions.
 
@@ -300,9 +300,9 @@ Ambiguous statements like "This isn't what I expected" return noul < 0.1 for `re
 
 | Case type | Expected behavior | Observed |
 |-----------|-------------------|----------|
-| Clear positive/negative | Confidence > 0.8 or noul > 0.8 / < 0.2 | Confirmed — routinely exceeds thresholds |
-| Ambiguous | Confidence < 0.7 or noul in 0.3–0.7 range | Confirmed — stays below over-confidence thresholds |
-| High-conf accuracy | More often correct than low-conf | Confirmed — >70% accuracy on labeled sample |
+| Clear positive/negative | Confidence > 0.8 or noul > 0.8 / < 0.2 | Confirmed : routinely exceeds thresholds |
+| Ambiguous | Confidence < 0.7 or noul in 0.3–0.7 range | Confirmed : stays below over-confidence thresholds |
+| High-conf accuracy | More often correct than low-conf | Confirmed : >70% accuracy on labeled sample |
 
 The calibration is conservative: Jev would rather say "I'm not sure" (low confidence) than guess wrong with high confidence.
 
@@ -312,7 +312,7 @@ The calibration is conservative: Jev would rather say "I'm not sure" (low confid
 
 A natural question arises: if Jev is fast and cheap, should every agent use it for every decision?
 
-**No.** Concentrating all routing through one decision model creates convergence — every agent develops the same blind spots. The recommended architecture is a separation of concerns:
+**No.** Concentrating all routing through one decision model creates convergence : every agent develops the same blind spots. The recommended architecture is a separation of concerns:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -348,7 +348,7 @@ A natural question arises: if Jev is fast and cheap, should every agent use it f
 |-------|------|-----|
 | **Orchestrator** | Jev via Gavel | Fast triage, intent routing, priority scoring. The orchestrator sees all traffic; Jev handles volume. |
 | **Worker agents** | LLM reasoning | Workers need reasoning, not classification. The Jev result arrives in the task contract from the orchestrator. |
-| **Suitability advisor** | Jev suitability rubric | A meta-agent or module evaluates *whether* Jev fits a proposed workflow — applies the decision tree from the skill. |
+| **Suitability advisor** | Jev suitability rubric | A meta-agent or module evaluates *whether* Jev fits a proposed workflow : applies the decision tree from the skill. |
 
 Model diversity across worker agents provides cognitive isolation. Jev at the orchestrator layer provides fast upstream triage. Workers receive typed decisions, not the Jev tool itself.
 
@@ -364,7 +364,7 @@ Model diversity across worker agents provides cognitive isolation. Jev at the or
 | **Vendor lock-in** | Plugin is a thin wrapper; switching decision providers means changing one HTTP call. |
 | **API key exposure** | Key is read from environment only; never committed. |
 
-### Escapements — when not to use Jev
+### Escapements : when not to use Jev
 
 - The answer is open-ended or requires explanation.
 - The task is multi-step reasoning.
@@ -420,7 +420,7 @@ When multiple agents or subagents call `jev_decide` concurrently, be aware that 
 
 Gavel exists because AI agents were burning expensive reasoning engines on cheap classification problems. The combination of a skill (teaching agents when to use structured decisions), a plugin (giving them the tool to make them), and a test suite (proving the tool works as claimed) closes that gap.
 
-The tests proved that Jev is not a toy — it produces calibrated, conservative, fast decisions that an orchestrator can act on. The discoveries (strict criteria schema, float scores, conservative noul, explicit-urgency requirement) are not bugs; they are characteristics that consumers must understand to use the tool correctly.
+The tests proved that Jev is not a toy : it produces calibrated, conservative, fast decisions that an orchestrator can act on. The discoveries (strict criteria schema, float scores, conservative noul, explicit-urgency requirement) are not bugs; they are characteristics that consumers must understand to use the tool correctly.
 
 **Three layers. Know when. Be able. Prove it works.**
 
