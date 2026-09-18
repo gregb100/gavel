@@ -1,0 +1,22 @@
+{
+  "name": "@openclaw/jev",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "typebox": "1.3.18"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.9.4"
+  },
+  "openclaw": {
+    "extensions": ["./dist/index.js"],
+    "compat": {
+      "pluginApi": ">=2026.9.4",
+      "minGatewayVersion": "2026.9.4"
+    },
+    "build": {
+      "openclawVersion": "2026.9.4",
+      "pluginSdkVersion": "2026.9.4"
+    }
+  }
+}
