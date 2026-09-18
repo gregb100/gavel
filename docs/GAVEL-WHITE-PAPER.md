@@ -2,7 +2,7 @@
 
 ### A White Paper on the OpenClaw Plugin and Skill for TypeSafe Jev
 
-**Author:** Gavel Contributors  
+**Author:** Greg Blaire  
 **Date:** 2026-09-18  
 **Status:** Public — ready for distribution
 
