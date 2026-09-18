@@ -1,6 +1,6 @@
 # Gavel:  Structured Decisions for AI Agent Orchestration
 
-### A White Paper on the OpenClaw Plugin and Skill for TypeSafe Jev
+### A White Paper on the Gavel Plugin and Skill for TypeSafe Jev
 
 **Author:** Greg Blaire with the help of AI
 
@@ -38,7 +38,7 @@ TypeSafe AI's Jev (System One class model, `typesafe/jev-1.13`) is purpose-built
 
 At ~200ms per call and ~$0.00002 per decision, it is 500–2,500x cheaper than a general-purpose LLM call for the same classification task. It cannot hallucinate an answer outside the provided options. It returns calibrated confidence that can gate automated actions.
 
-**But Jev alone is not enough.** An agent needs to know *when* to reach for it, *which* primitive to use, and *how* to structure the question. Without that knowledge, Jev is a sharp tool with no handle.
+**But Gavel alone is not enough.** An agent needs to know *when* to reach for it, *which* primitive to use, and *how* to structure the question. Without that knowledge, Gavel is a sharp tool with no handle.
 
 ---
 
@@ -48,9 +48,9 @@ At ~200ms per call and ~$0.00002 per decision, it is 500–2,500x cheaper than a
 
 ### Layer 1: The Skill (`SKILL.md`)
 
-The skill teaches agents **when and how** to use Jev. It is a decision tree, not a sales pitch:
+The skill teaches agents **when and how** to use Gavel. It is a decision tree, not a sales pitch:
 
-**Use Jev when ALL hold:**
+**Use Gavel when ALL hold:**
 
 - Output is yes/no, pick-from-set, or rubric level
 - Decision is atomic : one focused judgment
@@ -68,8 +68,8 @@ The skill teaches agents **when and how** to use Jev. It is a decision tree, not
 
 **Use hybrid when:**
 
-- Workflow has both decision points (Jev) and generation steps (LLM)
-- High-volume routing where Jev triages and LLM handles edge cases
+- Workflow has both decision points (Gavel) and generation steps (LLM)
+- High-volume routing where Gavel triages and LLM handles edge cases
 
 The skill also documents the three primitives with concrete examples, state format best practices (string for simple messages, object for named fields, array for conversations), confidence-gated routing thresholds (>0.8 auto-act, 0.5–0.8 confirm, <0.5 fallback), and example agent routing patterns : intent routing, bug triage, and message classification.
 
@@ -83,7 +83,7 @@ The plugin is a thin TypeScript wrapper that registers the `jev_decide` tool in 
 - Handles 30s timeout, error responses, and missing API key
 - Activates on gateway startup : no manual enable needed
 
-The plugin does no decision logic itself. It is a pipe. The intelligence lives in the skill (when to call) and in Jev (what to answer).
+The plugin does no decision logic itself. It is a pipe. The intelligence lives in the skill (when to call) and in the Gavel model (what to answer).
 
 ### Layer 3: The Test Suite (`tests/`)
 
@@ -120,12 +120,12 @@ The following diagram shows the end-to-end flow from user message through Gavel 
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │  SKILL LAYER  (SKILL.md)                                  │  │
 │  │                                                           │  │
-│  │  Teaches the agent WHEN to reach for Jev:                 │  │
+│  │  Teaches the agent WHEN to reach for Gavel:                 │  │
 │  │                                                           │  │
 │  │    Yes / no?        ──▶  noul                             │  │
 │  │    Pick from set?   ──▶  choice                           │  │
 │  │    Rate on rubric?  ──▶  score                            │  │
-│  │    Need prose/code? ──▶  use LLM, not Jev                 │  │
+│  │    Need prose/code? ──▶  use LLM, not Gavel                 │  │
 │  │                                                           │  │
 │  │  The agent decides: "This is a classification,            │  │
 │  │  not a reasoning task."                                   │  │
@@ -190,7 +190,7 @@ The three layers ship as a single repository:
 
 ```
 ┌──────────────┐
-│    SKILL     │   "When to use Jev, which primitive,
+│    SKILL     │   "When to use Gavel, which primitive,
 │   SKILL.md   │    what questions to ask"
 └──────┬───────┘
        │  teaches agents
@@ -211,7 +211,7 @@ The three layers ship as a single repository:
 
 **Three layers : know when, be able, prove it works.**
 
-The skill is the brain. The plugin is the hand. Jev is the gavel.
+The skill is the brain. The plugin is the hand. Gavel is the gavel.
 
 ---
 
@@ -238,7 +238,7 @@ Every test calls the real OpenRouter decisions API at `https://openrouter.ai/api
 
 ### Assertion Design
 
-Tests assert on Jev's actual behavior, not just response existence. Examples:
+Tests assert on Gavel's actual behavior, not just response existence. Examples:
 
 - Noul clear true: `assert noul > 0.8`
 - Choice clear match: `assert choice == "billing" and confidence > 0.7`
@@ -264,7 +264,7 @@ The API rejects string criteria for noul questions. It requires `{"true": "...",
 
 #### Finding 2: Score Values Are Continuous Floats
 
-Jev returns scores as floats in `[0, len(criteria) - 1]`. For a 3-level rubric (Calm / Frustrated / Very angry), scores cluster near 0.0, 1.0, or 2.0 but can be fractional (e.g., 0.45). The `legend` field maps integer indices to labels.
+Gavel returns scores as floats in `[0, len(criteria) - 1]`. For a 3-level rubric (Calm / Frustrated / Very angry), scores cluster near 0.0, 1.0, or 2.0 but can be fractional (e.g., 0.45). The `legend` field maps integer indices to labels.
 
 **Implication:** Consumers should use range assertions, not integer equality. A score of 0.9 is "between Calm and Frustrated, leaning Frustrated."
 
@@ -276,7 +276,7 @@ Ambiguous statements like "This isn't what I expected" return noul < 0.1 for `re
 
 #### Finding 4: Urgency Requires Explicit Signals
 
-"fix the login bug on the dashboard" returned `is_urgent` noul ~0.29. Without words like "urgent," "critical," "down," or "broken," Jev does not infer urgency from task type alone.
+"fix the login bug on the dashboard" returned `is_urgent` noul ~0.29. Without words like "urgent," "critical," "down," or "broken," Gavel does not infer urgency from task type alone.
 
 **Implication:** Routing that uses urgency detection should include context about impact, not just task description. State like `"fix the login bug : production is down"` should produce higher urgency.
 
@@ -289,11 +289,11 @@ Ambiguous statements like "This isn't what I expected" return noul < 0.1 for `re
 | Scaling factor | ~3–4x for 5x questions | <5x ✅ |
 | 30k-char state | completes within 30s | <30s ✅ |
 
-**Implication:** Jev is practical for real-time agent routing. A turn that calls Jev for intent + complexity + urgency adds <1s to the response.
+**Implication:** Gavel is practical for real-time agent routing. A turn that calls Gavel for intent + complexity + urgency adds <1s to the response.
 
 #### Finding 6: Casual Language Can Trigger Question Detection
 
-"hey what's up" was classified as `is_question` with noul ~0.84 : despite not being a literal question. Jev interprets conversational openings as implicit questions.
+"hey what's up" was classified as `is_question` with noul ~0.84 : despite not being a literal question. Gavel interprets conversational openings as implicit questions.
 
 **Implication:** Message classification thresholds should account for conversational intent, not just grammatical questions.
 
@@ -305,13 +305,13 @@ Ambiguous statements like "This isn't what I expected" return noul < 0.1 for `re
 | Ambiguous | Confidence < 0.7 or noul in 0.3–0.7 range | Confirmed : stays below over-confidence thresholds |
 | High-conf accuracy | More often correct than low-conf | Confirmed : >70% accuracy on labeled sample |
 
-The calibration is conservative: Jev would rather say "I'm not sure" (low confidence) than guess wrong with high confidence.
+The calibration is conservative: Gavel would rather say "I'm not sure" (low confidence) than guess wrong with high confidence.
 
 ---
 
 ## 7. Cognitive Diversity Consideration
 
-A natural question arises: if Jev is fast and cheap, should every agent use it for every decision?
+A natural question arises: if Gavel is fast and cheap, should every agent use it for every decision?
 
 **No.** Concentrating all routing through one decision model creates convergence : every agent develops the same blind spots. The recommended architecture is a separation of concerns:
 
@@ -320,7 +320,7 @@ A natural question arises: if Jev is fast and cheap, should every agent use it f
 │                    ORCHESTRATION LAYER                       │
 │                                                              │
 │   ┌───────────────────┐                                      │
-│   │  ORCHESTRATOR     │  Jev triages: intent, urgency,       │
+│   │  ORCHESTRATOR     │  Gavel triages: intent, urgency,       │
 │   │  (routing agent)  │  complexity, routing                 │
 │   └─────┬─────────────┘  ──▶  fast typed decision            │
 │         │                   (<1s, ~$0.00002)                  │
@@ -335,7 +335,7 @@ A natural question arises: if Jev is fast and cheap, should every agent use it f
 │   WORKER (A)    │ │   WORKER (B)    │ │   WORKER (C)    │
 │                 │ │                 │ │                 │
 │  LLM reasoning  │ │  LLM reasoning  │ │  LLM reasoning  │
-│  No Jev tool    │ │  No Jev tool    │ │  No Jev tool    │
+│  No Gavel tool    │ │  No Gavel tool    │ │  No Gavel tool    │
 │  Receives       │ │  Receives       │ │  Receives       │
 │  typed decision │ │  typed decision │ │  typed decision │
 │  from router    │ │  from router    │ │  from router    │
@@ -347,11 +347,11 @@ A natural question arises: if Jev is fast and cheap, should every agent use it f
 
 | Layer | Tool | Why |
 |-------|------|-----|
-| **Orchestrator** | Jev via Gavel | Fast triage, intent routing, priority scoring. The orchestrator sees all traffic; Jev handles volume. |
-| **Worker agents** | LLM reasoning | Workers need reasoning, not classification. The Jev result arrives in the task contract from the orchestrator. |
-| **Suitability advisor** | Jev suitability rubric | A meta-agent or module evaluates *whether* Jev fits a proposed workflow : applies the decision tree from the skill. |
+| **Orchestrator** | Gavel | Fast triage, intent routing, priority scoring. The orchestrator sees all traffic; Gavel handles volume. |
+| **Worker agents** | LLM reasoning | Workers need reasoning, not classification. The Gavel result arrives in the task contract from the orchestrator. |
+| **Suitability advisor** | Gavel suitability rubric | A meta-agent or module evaluates *whether* Gavel fits a proposed workflow : applies the decision tree from the skill. |
 
-Model diversity across worker agents provides cognitive isolation. Jev at the orchestrator layer provides fast upstream triage. Workers receive typed decisions, not the Jev tool itself.
+Model diversity across worker agents provides cognitive isolation. Gavel at the orchestrator layer provides fast upstream triage. Workers receive typed decisions, not the Gavel tool itself.
 
 ---
 
@@ -579,7 +579,7 @@ Gavel decides *what kind of work this is and how to route it*.\nThe LLM does the
 | **Vendor lock-in** | Plugin is a thin wrapper; switching decision providers means changing one HTTP call. |
 | **API key exposure** | Key is read from environment only; never committed. |
 
-### Escapements : when not to use Jev
+### Escapements : when not to use Gavel
 
 - The answer is open-ended or requires explanation.
 - The task is multi-step reasoning.
@@ -593,7 +593,7 @@ Gavel decides *what kind of work this is and how to route it*.\nThe LLM does the
 
 | Limitation | Detail |
 |------------|--------|
-| **No text generation** | Jev cannot write replies, code, or explanations. Strictly a decision model. |
+| **No text generation** | Gavel cannot write replies, code, or explanations. Strictly a decision model. |
 | **No reasoning** | Multi-step chain-of-thought is impossible. System 1 (fast gut-check), not System 2 (deliberate reasoning). |
 | **No multimodal** | Text only. No images, audio, or video. |
 | **32k context** | Not suitable for document analysis or long conversation evaluation. |
@@ -641,7 +641,7 @@ When multiple agents or subagents call `jev_decide` concurrently, be aware that 
 | **Router task class** | Add `jev_suitability` as a dispatchable task class for automated consult routing. |
 | **Threshold tuning** | Current confidence thresholds (>0.8 auto, 0.5–0.8 confirm, <0.5 fallback) are heuristics. Larger labeled datasets could calibrate these per use case. |
 | **Batch optimization** | For high-volume routing (1k+ decisions/day), explore batch API endpoints if TypeSafe offers them. |
-| **Multi-language support** | Test Jev accuracy on non-English inputs if international routing is needed. |
+| **Multi-language support** | Test Gavel accuracy on non-English inputs if international routing is needed. |
 
 ---
 
@@ -649,7 +649,7 @@ When multiple agents or subagents call `jev_decide` concurrently, be aware that 
 
 Gavel exists because AI agents were burning expensive reasoning engines on cheap classification problems. The combination of a skill (teaching agents when to use structured decisions), a plugin (giving them the tool to make them), and a test suite (proving the tool works as claimed) closes that gap.
 
-The tests proved that Jev is not a toy : it produces calibrated, conservative, fast decisions that an orchestrator can act on. The discoveries (strict criteria schema, float scores, conservative noul, explicit-urgency requirement) are not bugs; they are characteristics that consumers must understand to use the tool correctly.
+The tests proved that Gavel is not a toy : it produces calibrated, conservative, fast decisions that an orchestrator can act on. The discoveries (strict criteria schema, float scores, conservative noul, explicit-urgency requirement) are not bugs; they are characteristics that consumers must understand to use the tool correctly.
 
 **Three layers. Know when. Be able. Prove it works.**
 

@@ -5,11 +5,11 @@ description: "Use Gavel / Jev (TypeSafe System One) for fast structured decision
 
 # Gavel — Structured Decision Model
 
-## When to use Jev vs an LLM
+## When to use Gavel vs an LLM
 
-Use Jev when you need a **fast, cheap, typed decision** — not prose, not reasoning, not code.
+Use Gavel when you need a **fast, cheap, typed decision** — not prose, not reasoning, not code.
 
-| Use Jev | Use an LLM |
+| Use Gavel | Use an LLM |
 |---------|-----------|
 | Classify intent (bug vs feature vs research) | Write a response |
 | Route a ticket (billing/technical/sales) | Explain reasoning |
@@ -18,9 +18,9 @@ Use Jev when you need a **fast, cheap, typed decision** — not prose, not reaso
 | Confidence-gated routing | Multi-step reasoning |
 | Batch parallel judgments | Creative writing |
 
-**Rule:** If the answer is one of a known set of options, a number on a scale, or a yes/no — Jev. If you need words back — LLM.
+**Rule:** If the answer is one of a known set of options, a number on a scale, or a yes/no — Gavel. If you need words back — LLM.
 
-## What Jev is
+## What Gavel is
 
 - Structured decision model (TypeSafe AI, System One class)
 - Not a chat LLM — no text generation, no hallucination
@@ -97,7 +97,7 @@ Response: `{ "type": "score", "score": 2, "legend": {...}, "probabilities": {...
 
 ## State — how to structure it
 
-State is the content Jev evaluates. All questions in one call see the same state.
+State is the content Gavel evaluates. All questions in one call see the same state.
 
 | Format | When | Example |
 |--------|------|---------|
@@ -130,7 +130,7 @@ One call, three independent answers, ~200ms, ~$0.00002.
 
 ## Decomposition — atomic questions
 
-Jev works best on **one focused judgment per question**. Think "gut check a knowledgeable person makes in a few seconds."
+Gavel works best on **one focused judgment per question**. Think "gut check a knowledgeable person makes in a few seconds."
 
 **Bad:** "Analyze this startup pitch and determine the best course of action"
 **Good:** Break into market_size, technical_feasibility, differentiation — then combine in code with weights.
@@ -253,28 +253,28 @@ Send many questions at once, including speculative ones. Let code decide what's 
 
 5 questions, one call, ~200ms, ~$0.00002. Cheaper and faster than 5 LLM calls.
 
-## System discovery — know your environment before using Jev
+## System discovery — know your environment before using Gavel
 
-Before an agent uses Jev for the first time, it should understand the target
+Before an agent uses Gavel for the first time, it should understand the target
 system. If any of these are unknown, ask the operator before proceeding:
 
 1. **Available models** — Which LLMs are configured? Which is the cheapest fast
-   model suitable for classification fallback when Jev is unavailable?
+   model suitable for classification fallback when Gavel is unavailable?
 2. **Routing decisions** — What classifications does this system actually need?
    What are the categories? What routing actions map to each category?
 3. **Confidence thresholds** — What risk level warrants auto-action vs
    confirmation? What is the blast radius of a wrong routing decision?
-4. **Fallback chain** — When Jev fails, which model takes over? What if that
+4. **Fallback chain** — When Gavel fails, which model takes over? What if that
    model also fails? What is the safe default when all models are unavailable?
 5. **Safe state** — What data can leave the system for a cloud API? What is
-   PII? What is internal? What must never be sent as Jev state?
+   PII? What is internal? What must never be sent as Gavel state?
 
 If these are not answered, the agent should discover them before relying on
-Jev for production routing. Guessing thresholds or fallback models is a defect.
+Gavel for production routing. Guessing thresholds or fallback models is a defect.
 
-## Fallback strategy — when Jev is unavailable
+## Fallback strategy — when Gavel is unavailable
 
-Jev is an external API. It will fail. The plugin throws on error (timeout, 4xx,
+Gavel calls an external API. It will fail. The plugin throws on error (timeout, 4xx,
 5xx, network, missing API key). The agent must implement fallback — the plugin
 is a pipe, not a policy engine.
 
@@ -282,16 +282,16 @@ is a pipe, not a policy engine.
 
 | Tier | Trigger | What runs | Cost | Latency |
 |------|---------|-----------|------|---------|
-| **1 — Jev** | Normal path | `jev_decide` | ~$0.00002 | ~200ms |
-| **2 — Fast LLM** | Jev error/timeout | Cheapest configured fast model with structured classification prompt | ~$0.001-0.01 | ~1-3s |
+| **1 — Gavel** | Normal path | `jev_decide` | ~$0.00002 | ~200ms |
+| **2 — Fast LLM** | Gavel error/timeout | Cheapest configured fast model with structured classification prompt | ~$0.001-0.01 | ~1-3s |
 | **3 — Lite LLM** | Fast LLM fails | Cheapest lite model with same structured prompt | ~$0.0005 | ~1-2s |
 | **4 — Hardcoded** | All models fail | Route to safe default ("unknown" bucket, queue for manual review) | $0 | instant |
 
 ### Fallback prompt design
 
-The fallback LLM call should be structured the **same way** as the Jev call —
+The fallback LLM call should be structured the **same way** as the Gavel call —
 same question, same answer set, same state. Ask the LLM to return only the
-label, not reasoning. Downstream code should not need to know whether Jev or
+label, not reasoning. Downstream code should not need to know whether Gavel or
 the LLM made the decision.
 
 Example fallback prompt for a choice question:
@@ -306,15 +306,15 @@ Message: "fix the login bug on dashboard"
 
 ### When to fall back vs when to stop
 
-- **Fall back (tier 2-3):** Jev timeout, 5xx, network error — transient failures
+- **Fall back (tier 2-3):** Gavel timeout, 5xx, network error — transient failures
 - **Fall back (tier 2-3):** 401 auth error — but also alert operator to fix API key
 - **Fall back (tier 2-3):** 429 rate limit — but also back off and reduce call frequency
 - **Stop and alert (tier 4):** All models failing — system-level problem, do not retry silently
 
 ### Cost of fallback
 
-Falling back to an LLM is 50-500x more expensive than Jev per call. At low
-volume (<50 Jev calls/day), fallback cost is negligible. At scale (1k+
+Falling back to an LLM is 50-500x more expensive than Gavel per call. At low
+volume (<50 Gavel calls/day), fallback cost is negligible. At scale (1k+
 calls/day), frequent fallback indicates a systemic problem — investigate root
 cause, do not accept fallback as normal.
 
@@ -330,13 +330,13 @@ cause, do not accept fallback as normal.
 
 ## Cost comparison
 
-| Task | Jev | General-purpose LLM |
+| Task | Gavel | General-purpose LLM |
 |------|-----|---------------------|
 | 1 classification | ~$0.00002 | ~$0.01-0.05 |
 | 1000 classifications | ~$0.02 | ~$10-50 |
 | 10k classifications/day | ~$0.20 | ~$100-500 |
 
-For high-volume routing decisions, Jev is 500-2500x cheaper.
+For high-volume routing decisions, Gavel is 500-2500x cheaper.
 
 ## Related
 
