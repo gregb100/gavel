@@ -61,8 +61,18 @@ Developer says "fix the payment webhook 500s"
 
 ## Requirements
 
-- OpenClaw gateway >= `2026.9.4`
+- OpenClaw gateway >= `2026.9.4` (plugin SDK + tool registry compatibility)
 - An [OpenRouter](https://openrouter.ai) API key with access to `typesafe/jev-1.13`
+
+### Compatibility
+
+| OpenClaw version | Status |
+|-----------------|--------|
+| `< 2026.9.4` | Not compatible — plugin SDK API changed |
+| `>= 2026.9.4` | Fully tested and supported |
+| Future versions | Should work; re-run test suite to verify |
+
+The plugin uses `definePluginEntry` and `defineToolPlugin` from the OpenClaw plugin SDK, plus TypeBox for schema validation. These APIs were stabilized in `2026.9.4`. Earlier versions may not register the tool correctly.
 
 ## Installation
 

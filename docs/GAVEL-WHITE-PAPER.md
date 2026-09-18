@@ -605,6 +605,20 @@ Gavel decides *what kind of work this is and how to route it*.\nThe LLM does the
 
 ## 11. Deployment Considerations
 
+### Compatibility
+
+| OpenClaw version | Status |
+|-----------------|--------|
+| `< 2026.9.4` | Not compatible — plugin SDK API changed |
+| `>= 2026.9.4` | Fully tested and supported |
+| Future versions | Should work; re-run test suite to verify |
+
+The plugin uses `definePluginEntry` and `defineToolPlugin` from the OpenClaw
+plugin SDK, plus TypeBox for schema validation. These APIs were stabilized in
+`2026.9.4`. Earlier versions may not register the tool correctly.
+
+### Installation
+
 Gavel is designed to drop into any OpenClaw installation:
 
 1. Copy this repository into your OpenClaw extensions directory.
