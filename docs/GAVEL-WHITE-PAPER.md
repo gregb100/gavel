@@ -355,69 +355,217 @@ Model diversity across worker agents provides cognitive isolation. Jev at the or
 
 ---
 
-## 8. Practical Usage — Build and Fix Workflows
+## 8. Development Use Cases
 
-Gavel is a decision tool, not a build tool. Understanding this distinction is
-critical to using it effectively.
+Gavel is a decision tool, not a build tool. It handles the routing, triage,
+and gating decisions that happen *before* code is written. Understanding
+this distinction is critical to using it effectively.
 
-### Where Gavel fits in a build/fix workflow
+### Use Case 1: Incoming Task Routing
 
-Every build or fix task starts with a routing decision. Gavel makes that
-decision before the expensive LLM reasoning begins:
+A developer messages their agent: "the payment webhook is returning 500s."\nBefore any investigation begins, Gavel classifies:
 
-| Point in workflow | What Gavel decides | What happens next |
-|---|---|---|
-| Incoming task | Bug or feature? How complex? Urgent? | Routes to worker, solo fix, or queue |
-| Bug triage | Severity? Category? Blocker? | Priority assignment, escalation |
-| Spawn decision | Solo or delegate? Which agent? | Right resource gets the work |
-| Scope check | One task or needs decomposition? | Decomposer or direct spawn |
-| Risk gate | High-risk path? Needs TDD? Irreversible? | TDD mandatory vs fast fix |
+```json
+{
+  "state": "the payment webhook is returning 500s",
+  "questions": {
+    "intent": {
+      "type": "choice",
+      "instructions": "What kind of work is this?",
+      "criteria": {
+        "bug": "Something is broken and needs fixing",
+        "feature": "New functionality or enhancement",
+        "research": "Investigation or exploration",
+        "ops": "Infrastructure, config, deployment",
+        "status": "Status check or quick question",
+        "chat": "Conversation or discussion"
+      }
+    },
+    "complexity": {
+      "type": "score",
+      "instructions": "How complex is this?",
+      "criteria": ["Trivial — one liner", "Simple — solo fix", "Moderate — needs investigation + fix", "Complex — multi-system or architectural"]
+    },
+    "is_urgent": {
+      "type": "noul",
+      "instructions": "Does this require immediate action?",
+      "criteria": {"true": "Production is down, data loss, security issue", "false": "Can be queued normally"}
+    },
+    "is_blocker": {
+      "type": "noul",
+      "instructions": "Does this block other work?",
+      "criteria": {"true": "Blocks deployment, other features, or critical path", "false": "Isolated issue"}
+    }
+  }
+}
+```
 
-### Where Gavel does NOT fit
-
-| Task | Why | Right tool |
-|---|---|---|
-| Writing fix code | Needs code generation | Worker agent (LLM) |
-| Reviewing a diff | Needs reasoning | Orchestrator (LLM) |
-| Debugging root cause | Needs investigation | Worker agent (LLM) |
-| Designing architecture | Needs reasoning | Orchestrator / advisor (LLM) |
-
-### The separation principle
+Gavel returns in ~200ms:
 
 ```
-User says "fix the login bug"
+intent:      bug         (confidence=0.94)
+complexity:  2 (Moderate) (confidence=0.81)
+is_urgent:   0.87
+is_blocker:  0.72
+```
+
+The agent now knows: this is a bug, moderate complexity, urgent, and blocking.
+It routes to a worker agent immediately with the right priority — without
+burning an LLM call to figure that out.
+
+### Use Case 2: Bug Triage and Prioritization
+
+A bug report comes in: "shopping cart total shows $0 when more than 5 items."\nGavel triages across multiple dimensions in one call:
+
+| Question | Type | What it decides |
+|----------|------|----------------|
+| severity | score (Cosmetic→Critical) | How bad is this? |
+| category | choice (crash/data_loss/regression/performance/ui/security/other) | What kind of bug? |
+| is_blocker | noul | Does this block normal operation? |
+| needs_tdd | noul | Is this a high-risk path requiring test-first? |
+| assign_to | choice (solo/junior/senior/architect) | Who should handle this? |
+
+5 questions, one call, ~200ms, ~$0.00002. The agent gets a complete triage
+packet to route the bug to the right person with the right priority.
+
+### Use Case 3: PR Review Gate
+
+A pull request comes in. Before spending LLM tokens reviewing it, Gavel
+classifies whether review is even needed and at what depth:
+
+```json
+{
+  "state": "PR #142: Update README.md — fix typo in installation section",
+  "questions": {
+    "review_depth": {
+      "type": "choice",
+      "instructions": "What level of review does this PR need?",
+      "criteria": {
+        "none": "Trivial change, auto-merge eligible",
+        "light": "Quick sanity check sufficient",
+        "standard": "Normal code review",
+        "deep": "Needs careful review — security, data, or critical path"
+      }
+    },
+    "is_risky": {
+      "type": "noul",
+      "instructions": "Does this PR touch risky code?",
+      "criteria": {"true": "Touches auth, payments, data layer, or security", "false": "Docs, comments, config, or non-critical code"}
+    },
+    "needs_tests": {
+      "type": "noul",
+      "instructions": "Should this PR include tests?",
+      "criteria": {"true": "Changes logic, behavior, or data flow", "false": "No logic change"}
+    }
+  }
+}
+```
+
+Gavel returns: `review_depth=light, is_risky=0.03, needs_tests=0.08`.\nThe agent does a quick sanity check and merges — no deep LLM review needed.\nFor a PR touching the payment module, Gavel returns `review_depth=deep,\nis_risky=0.91, needs_tests=0.95` — full review with test verification.
+
+### Use Case 4: Test Prioritization
+
+When a CI run produces 50 failing tests, reviewing each one with an LLM is
+expensive. Gavel triages each failure in 200ms:
+
+| Question | Type | What it decides |
+|----------|------|----------------|
+| failure_type | choice (assertion/flaky/timeout/env/blocked/other) | What kind of failure? |
+| severity | score (Cosmetic→Critical) | How important is this test? |
+| is_flaky | noul | Is this likely a flaky test? |
+| needs_investigation | noul | Does this need human/debugger attention? |
+
+50 tests × 4 questions = 200 judgments. At 5 questions per batch call, that's\n10 calls, ~2 seconds total, ~$0.0002. The agent gets a prioritized list of\nwhich failures to investigate first — without spending $0.50-2.50 on LLM\nclassification.
+
+### Use Case 5: Scope and Decomposition Gate
+
+Before starting implementation, Gavel checks whether the task is safe to\nexecute directly or needs decomposition:
+
+```json
+{
+  "state": "Migrate the auth system from JWT to session-based tokens",
+  "questions": {
+    "scope": {
+      "type": "choice",
+      "instructions": "What is the scope of this task?",
+      "criteria": {
+        "single_file": "Change is isolated to one file",
+        "single_module": "Change is within one module or service",
+        "cross_module": "Change spans multiple modules",
+        "architectural": "Changes system architecture or contracts"
+      }
+    },
+    "needs_decomposition": {
+      "type": "noul",
+      "instructions": "Should this be broken into smaller tasks?",
+      "criteria": {"true": "Too large for one pass, multiple independent steps", "false": "Can be done in one implementation pass"}
+    },
+    "is_reversible": {
+      "type": "noul",
+      "instructions": "Is this change easily reversible?",
+      "criteria": {"true": "Can be reverted with no data impact", "false": "Involves data migration, schema change, or external contracts"}
+    },
+    "needs_tdd": {
+      "type": "noul",
+      "instructions": "Does this require test-first development?",
+      "criteria": {"true": "High-risk path, silent failure possible, or production-critical", "false": "Low-risk, visible failure on break"}
+    }
+  }
+}
+```
+
+Gavel returns: `scope=architectural, needs_decomposition=0.92,\nis_reversible=0.15, needs_tdd=0.88`. The agent decomposes the task into\nphases, requires TDD, and flags it as irreversible — before writing a single\nline of code.
+
+### Use Case 6: Incident Severity Routing
+
+When a monitoring alert fires, the first question is always: how bad is it?\nGavel classifies the alert in 200ms:
+
+| Question | Type | Options |
+|----------|------|--------|
+| severity | score | Nominal / Warning / Minor / Major / Critical |
+| action | choice | log_only / notify_team / page_on_call / escalate_to_lead |
+| is_customer_facing | noul | Is this visible to customers? |
+| is_data_risk | noul | Is there risk of data loss or corruption? |
+
+One call, four answers, 200ms. The on-call agent knows whether to wake someone\nup or just log it — without spending 3 seconds and $0.03 on an LLM call at\n3am.
+
+### Where Gavel Does NOT Fit
+
+Gavel handles the decisions *before* and *around* the code. It does not
+handle the code itself:
+
+| Task | Why Gavel can't | Right tool |
+|---|---|---|
+| Writing fix code | Needs code generation | Worker agent (LLM) |
+| Reviewing a diff | Needs reasoning and judgment | LLM |
+| Debugging root cause | Needs investigation and reasoning | LLM |
+| Designing architecture | Needs multi-step reasoning | LLM |
+| Writing test cases | Needs code generation | Worker agent (LLM) |
+| Refactoring | Needs code understanding | Worker agent (LLM) |
+
+### The Separation Principle
+
+```
+Developer says "fix the payment webhook 500s"
          │
          ▼
    GAVEL classifies (200ms, $0.00002)
-   intent=bug  complexity=moderate  urgency=low
+   intent=bug  complexity=moderate  urgent=yes  blocker=yes
          │
          ▼
-   LLM builds the fix (reasoning, code generation)
+   Agent routes: immediate priority, spawn worker with TDD contract
          │
          ▼
-   LLM reviews the diff (reasoning, quality gate)
+   LLM investigates and writes the fix (reasoning + code generation)
          │
          ▼
-   Done
+   LLM reviews the diff (reasoning + quality gate)
+         │
+         ▼
+   Agent runs tests, verifies, reports back
 ```
 
-Gavel decides *what kind of work this is*. The LLM does the work.
-
-### What "Gavel" means as a verb
-
-"Gavel" is not a prefix for tasks. It is a reminder to classify before
-acting.
-
-- **User says a task** → Agent Gavel-classifies automatically, then routes.
-  User does not need to say "Gavel."
-- **User says "Gavel"** → Agent checks: did I classify this with Gavel
-  before proceeding? If not, self-correct.
-- **User says "Gavel [non-classification thing]"** → Agent recognizes the
-  mismatch: "Gavel can't do that — this is a reasoning task. Running as LLM."
-
-Gavel cannot analyze architecture, build features, or fix bugs. It can only
-classify, route, score, and gate. Forcing a non-classification task through
-Gavel is a defect.
+Gavel decides *what kind of work this is and how to route it*.\nThe LLM does the actual work. Clean separation.
 
 ---
 
