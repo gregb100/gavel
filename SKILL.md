@@ -338,6 +338,18 @@ cause, do not accept fallback as normal.
 
 For high-volume routing decisions, Gavel is 500-2500x cheaper.
 
+## Install / tool policy (plugin loaded but tool missing)
+
+Plugin id is `jev`. Tool name is `jev_decide`.
+
+OpenClaw `tools.profile: "coding"` does not include `group:plugins`. Enabling the plugin is not enough.
+
+1. Set `plugins.entries.jev.enabled: true`.
+2. Add `jev_decide` to `tools.alsoAllow`.
+3. If an agent has its own `agents.entries.<id>.tools.alsoAllow`, add `jev_decide` on that list too. Per-agent `alsoAllow` does not inherit the global extra.
+4. Restart with `openclaw gateway restart`.
+5. Confirm with `openclaw plugins inspect jev` and a live `jev_decide` call.
+
 ## Related
 
 - TypeSafe docs: https://docs.typesafe.ai

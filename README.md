@@ -96,9 +96,47 @@ The plugin uses `definePluginEntry` and `defineToolPlugin` from the OpenClaw plu
    export OPENROUTER_API_KEY=sk-or-...
    ```
 
-4. Restart the OpenClaw gateway.
+4. Enable the plugin and grant the tool. Plugin id is `jev` (even if the directory is named `gavel`). `tools.profile: "coding"` does **not** include `group:plugins`, so a loaded plugin still will not appear until you allow `jev_decide`.
 
-5. Verify the plugin loaded by checking that `jev_decide` is available in an agent session.
+   Global (enough if no agent overrides `tools.alsoAllow`):
+
+   ```json5
+   {
+     plugins: { entries: { jev: { enabled: true } } },
+     tools: {
+       profile: "coding",
+       alsoAllow: ["jev_decide"],
+     },
+   }
+   ```
+
+   If an agent already has its own `agents.entries.<id>.tools.alsoAllow` (for example `message` only), **add `jev_decide` there too**. A per-agent `alsoAllow` list does not pick up the global extra by itself.
+
+   ```json5
+   {
+     agents: {
+       entries: {
+         helix: {
+           tools: { alsoAllow: ["message", "jev_decide"] },
+         },
+       },
+     },
+   }
+   ```
+
+5. Restart the gateway with the native command (not a guessed systemd unit name):
+
+   ```bash
+   openclaw gateway restart
+   ```
+
+6. Verify:
+
+   ```bash
+   openclaw plugins inspect jev   # Status: enabled
+   ```
+
+   Then confirm `jev_decide` is in the agent tool list and call it once. Plugin loaded + restart is not enough if the tool is still policy-filtered.
 
 ## Usage
 
