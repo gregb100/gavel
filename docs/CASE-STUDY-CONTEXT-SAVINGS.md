@@ -111,4 +111,4 @@ This was a one-shot task (42 rules, evaluated once). Recurring tasks (cron watch
 
 Gavel demonstrates measurable context savings on real classification work. The architectural principle — **externalize the reasoning, keep only the result** — reduces agent context consumption by ~40% on classification tasks. The one-time build cost amortizes within ~10 tasks. For recurring decision workflows, the savings compound.
 
-The case study also validates the CoS review gate: Jev made 2 misclassifications out of 42 decisions (95% accuracy), both caught by agent review. The terse output format makes review cheap (~1k tokens for 42 decisions).
+The case study also validates the review gate: Jev made 2 misclassifications out of 42 decisions (95% accuracy), both caught by agent review. The terse output format makes review cheap (~1k tokens for 42 decisions).

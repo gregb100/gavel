@@ -116,7 +116,7 @@ The plugin uses `definePluginEntry` and `defineToolPlugin` from the OpenClaw plu
    {
      agents: {
        entries: {
-         helix: {
+         example_agent: {
            tools: { alsoAllow: ["message", "jev_decide"] },
          },
        },

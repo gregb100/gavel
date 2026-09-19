@@ -2,7 +2,7 @@
 
 ### A White Paper on the Gavel Plugin and Skill for TypeSafe Jev
 
-**Author:** Greg Blaire with the help of AI
+**Author:** Gavel Contributors
 
 **Date:** 2026-09-18  
 **Status:** Public : ready for distribution
