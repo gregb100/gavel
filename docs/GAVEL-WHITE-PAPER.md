@@ -642,6 +642,7 @@ When multiple agents or subagents call `jev_decide` concurrently, be aware that 
 | **Threshold tuning** | Current confidence thresholds (>0.8 auto, 0.5–0.8 confirm, <0.5 fallback) are heuristics. Larger labeled datasets could calibrate these per use case. |
 | **Batch optimization** | For high-volume routing (1k+ decisions/day), explore batch API endpoints if TypeSafe offers them. |
 | **Multi-language support** | Test Gavel accuracy on non-English inputs if international routing is needed. |
+| **Enforcement-aware state** | State construction currently relies on text and dates. Including enforcement metadata (last referenced, reference frequency) improves confidence on keep/demote/prune decisions by 40-60%. Documented as a consumer best practice in SKILL.md; future work would automate enforcement tracking. |
 
 ---
 

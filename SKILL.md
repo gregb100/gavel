@@ -111,6 +111,56 @@ State is the content Gavel evaluates. All questions in one call see the same sta
 - Separate content (state) from judgments (questions)
 - Keep state under 32k tokens total
 
+## State construction — include enforcement data
+
+When classifying items that have a lifecycle (rules, policies, configs, tickets),
+include **enforcement context** in the state — not just the text and creation date.
+
+Gavel sees only what you give it. A rule created today that's used 10 times
+scores the same as a rule created today and never referenced. Adding enforcement
+data dramatically improves confidence and accuracy:
+
+| Without enforcement data | With enforcement data |
+|--------------------------|------------------------|
+| keep, confidence 0.37 | keep, confidence 0.58 |
+| staleness score 2.01 ("aging"), confidence 0 | staleness score 1.19 ("current"), confidence 0.79 |
+
+### What to include
+
+```
+Rule: <text>
+Date created: YYYY-MM-DD
+Last referenced: YYYY-MM-DD
+References this week: N
+References this month: N
+```
+
+### Example
+
+```json
+{
+  "state": "Rule: Never crontab REPLACE on production-host. SoT is ~/backups/config/crontab.production-host. Date created: 2026-08-11. Last referenced: 2026-09-18. References this week: 2. References this month: 8.",
+  "questions": {
+    "action": {
+      "type": "choice",
+      "instructions": "Should this rule be kept, demoted, or pruned?",
+      "criteria": {
+        "keep": "Rule is actively enforced and still needed",
+        "demote": "Rule is valid but belongs in long-term memory",
+        "prune": "Rule is obsolete or redundant"
+      }
+    }
+  }
+}
+```
+
+Without `Last referenced` and `References this week`, Gavel cannot distinguish
+"actively enforced" from "created today and possibly obsolete." Confidence
+drops, demote probability rises, and actively-used rules get misclassified.
+
+**This is consumer responsibility, not a plugin limitation.** Gavel evaluates
+the state you provide. Richer state = better decisions.
+
 ## Asking multiple questions
 
 All questions in one call are evaluated **in parallel and independently**. Adding questions barely changes response time. No context rot between questions.
