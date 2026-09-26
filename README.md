@@ -1,6 +1,6 @@
 # Gavel
 
-**Stop burning LLM calls on classification. Route bugs, triage failures, and gate PRs in 200ms for $0.00002.**
+**Use this new OpenClaw plutin and Skill combo to stop burning LLM calls on classification. Route bugs, triage failures, and gate PRs in 200ms for $0.00002.**
 
 Gavel is an OpenClaw plugin that gives AI agents a fast, cheap, structured decision tool for development workflows. It wraps TypeSafe's Jev model (`typesafe/jev-1.13`) through the OpenRouter decisions API and teaches agents exactly when to use it — and when not to.
 
